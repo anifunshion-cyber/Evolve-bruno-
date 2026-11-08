@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5"><title>Evolve</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f4f5fa;--card:#fff;--tx:#14142b;--mu:#6b6b85;--ln:#e6e7f0;--ac:#4f46e5;--ac2:#eef0ff;--ok:#16a34a;--wa:#f59e0b;--bad:#dc2626}
+@media(prefers-color-scheme:dark){:root:not([data-t=light]){--bg:#0e0f1a;--card:#181a2b;--tx:#f1f1fa;--mu:#9a9bb8;--ln:#2a2c44;--ac:#8b85ff;--ac2:#23254a}}
+:root[data-t=dark]{--bg:#0e0f1a;--card:#181a2b;--tx:#f1f1fa;--mu:#9a9bb8;--ln:#2a2c44;--ac:#8b85ff;--ac2:#23254a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 110px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:20px;padding:16px;margin-bottom:12px}
+h1{font-size:40px;margin:2px 0;letter-spacing:-1px}h2{font-size:18px;margin:0 0 8px}
+.mu{color:var(--mu);font-size:14px}.row{display:flex;gap:10px;align-items:center}.sp{justify-content:space-between}
+.bar{height:10px;background:var(--ln);border-radius:9px;overflow:hidden;margin:10px 0 6px}.bar i{display:block;height:100%;background:var(--ac);border-radius:9px;transition:width .5s}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}.stats b{font-size:28px;display:block}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:14px;padding:14px;width:100%;font-weight:600}
+.btn.alt{background:var(--ac2);color:var(--ac)}.btn.bad{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.btn.sm{width:auto;padding:8px 14px;border-radius:10px}
+.task{display:flex;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--ln)}.task:last-child{border:0}
+.chk{width:30px;height:30px;border-radius:10px;border:2px solid var(--ln);display:grid;place-items:center;flex:none;background:none;font-size:18px;color:#fff;transition:.15s}
+.task.on .chk{background:var(--ok);border-color:var(--ok);animation:pop .25s}.task.on .tt{text-decoration:line-through;color:var(--mu)}
+@keyframes pop{50%{transform:scale(1.25)}}
+.tt{flex:1}.star{background:none;border:0;font-size:20px;opacity:.35}.star.on{opacity:1}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.d{aspect-ratio:1;border-radius:12px;border:1px solid var(--ln);background:var(--card);display:grid;place-items:center;font-size:13px;font-weight:600;position:relative}
+.d[disabled]{opacity:.35}.d.sel{outline:3px solid var(--ac)}.d.today{border-color:var(--ac)}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--ln);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:9;overflow-x:auto}
+.tabs button{flex:1;min-width:52px;background:none;border:0;font-size:11px;color:var(--mu);padding:4px 2px}.tabs button span{display:block;font-size:21px}
+.tabs button.on{color:var(--ac);font-weight:700}
+input[type=text],input[type=date],input[type=number],textarea,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--ln);background:var(--bg)}
+textarea{min-height:110px}.moods{display:flex;gap:8px;margin:8px 0}.moods button{flex:1;font-size:26px;padding:8px;border-radius:12px;border:2px solid var(--ln);background:none}.moods .on{border-color:var(--ac);background:var(--ac2)}
+.timer{font-size:54px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+.toast{position:fixed;left:50%;bottom:95px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:30px;z-index:20;font-size:14px}
+.bars{display:flex;align-items:flex-end;gap:5px;height:110px}.bars div{flex:1;background:var(--ac);border-radius:6px 6px 2px 2px;min-height:3px;opacity:.9}
+.lab{display:flex;gap:5px;font-size:11px;color:var(--mu)}.lab span{flex:1;text-align:center}
+.tip{border-left:4px solid var(--ac);padding-left:12px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<main id="app"></main><nav class="tabs" id="nav"></nav>
+<script>
+const $=s=>document.querySelector(s),DAY=864e5,TOTAL=90;
+const LV=["Débutant","Apprenti","Régulier","Engagé","Discipliné","Expert","Maître","Légende"];
+const CATS={sante:"🏃 Santé",esprit:"🧠 Esprit",travail:"💼 Travail",perso:"🌱 Perso"};
+const DEF=[["Bloc de travail profond","travail",20,1],["Boire 2 L d'eau","sante",5],["30 min de sport","sante",15],["Lire 20 pages","esprit",10],["Méditer 10 min","esprit",10],["Planifier demain","travail",10],["Faire son lit","perso",5],["Dormir avant 23 h","sante",10],["Apprendre quelque chose","esprit",10],["Ranger 10 min","perso",5],["Zéro réseaux sociaux avant midi","esprit",10],["Écrire 3 gratitudes","perso",5]].map((x,i)=>({id:"t"+i,t:x[0],c:x[1],xp:x[2],p:!!x[3]}));
+const QUOTES=["Petit à petit, l'oiseau fait son nid.","La discipline bat la motivation.","Un jour à la fois.","Fais aujourd'hui ce que les autres ne veulent pas.","Le progrès, même minuscule, reste du progrès.","Ce que tu répètes, tu le deviens."];
+const ymd=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")};
+const parse=s=>{const[a,b,c]=s.split("-");return new Date(a,b-1,c)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S;try{S=JSON.parse(localStorage.getItem("evolve"))}catch(e){}
+S=S||{start:ymd(new Date()),tasks:DEF,done:{},journal:{},theme:"auto"};
+const save=()=>{try{localStorage.setItem("evolve",JSON.stringify(S))}catch(e){}};
+let tab="home",sel=ymd(new Date()),mood=null,toastT;
+const today=()=>ymd(new Date());
+const dayN=d=>Math.floor((parse(d)-parse(S.start))/DAY)+1;
+const dateOf=n=>ymd(new Date(parse(S.start).getTime()+(n-1)*DAY+3600e3));
+const isDone=(d,id)=>(S.done[d]||[]).includes(id);
+const cnt=d=>S.tasks.filter(t=>isDone(d,t.id)).length;
+const pct=d=>S.tasks.length?cnt(d)/S.tasks.length:0;
+const xpOf=d=>S.tasks.reduce((a,t)=>a+(isDone(d,t.id)?t.xp:0),0);
+const allDays=()=>{const n=Math.min(Math.max(dayN(today()),1),TOTAL),r=[];for(let i=1;i<=n;i++)r.push(dateOf(i));return r};
+const XP=()=>allDays().reduce((a,d)=>a+xpOf(d),0);
+const lvl=x=>Math.floor(x/200);
+function streak(){let n=0,i=dayN(today());if(i<1)return 0;if(pct(dateOf(Math.min(i,TOTAL)))<.5)i--;for(;i>=1;i--){if(pct(dateOf(i))>=.5)n++;else break}return n}
+function regul(){const d=allDays();return d.length?Math.round(d.filter(x=>pct(x)>=.5).length/d.length*100):0}
+function toast(m){clearTimeout(toastT);let t=$(".toast");if(!t){t=document.createElement("div");t.className="toast";document.body.appendChild(t)}t.textContent=m;toastT=setTimeout(()=>t.remove(),1800)}
+function toggle(id,d){d=d||sel;if(dayN(d)<1||d>today())return;const a=S.done[d]=S.done[d]||[],i=a.indexOf(id);i>=0?a.splice(i,1):a.push(id);save();if(i<0){navigator.vibrate&&navigator.vibrate(15);const t=S.tasks.find(x=>x.id==id);toast("+"+t.xp+" XP ✨");if(cnt(d)==S.tasks.length)toast("Journée parfaite ! 🎉")}render()}
+function taskList(d){const ro=d>today();return S.tasks.map(t=>`<div class="task ${isDone(d,t.id)?"on":""}"><button class="chk" ${ro?"disabled":""} onclick="toggle('${t.id}','${d}')">${isDone(d,t.id)?"✓":""}</button><div class="tt">${esc(t.t)}<div class="mu">${CATS[t.c]} · ${t.xp} XP</div></div><button class="star ${t.p?"on":""}" onclick="prio('${t.id}')" aria-label="Priorité">★</button></div>`).join("")}
+function prio(id){const t=S.tasks.find(x=>x.id==id);t.p=!t.p;save();render()}
+// Timer
+let T={mode:"work",left:1500,end:0,run:false,iv:null};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+function tick(){T.left=Math.max(0,Math.round((T.end-Date.now())/1000));const e=$("#tm");if(e)e.textContent=fmt(T.left);if(T.left<=0){clearInterval(T.iv);T.run=false;navigator.vibrate&&navigator.vibrate([200,100,200]);T.mode=T.mode=="work"?"rest":"work";T.left=T.mode=="work"?1500:300;toast(T.mode=="rest"?"Pause méritée ☕":"Au travail 💪");render()}}
+function tgl(){if(T.run){clearInterval(T.iv);T.run=false}else{T.end=Date.now()+T.left*1000;T.run=true;T.iv=setInterval(tick,500)}render()}
+function rst(){clearInterval(T.iv);T={mode:"work",left:1500,end:0,run:false,iv:null};render()}
+function coach(){const t=today(),n=dayN(t),p=pct(t),s=streak(),h=new Date().getHours();
+if(n<1)return"Ton programme commence bientôt. Prépare tes tâches dans Réglages.";
+if(p==1)return"Journée parfaite. Écris dans ton journal ce qui a bien marché pour le refaire demain.";
+if(p==0&&h<12)return"Commence par ta priorité (★) avant tout le reste : 25 min de focus suffisent pour lancer l'élan.";
+if(p==0)return"Rien de coché encore. Choisis la tâche la plus facile et fais-la dans les 5 prochaines minutes.";
+if(p<.5)return"Tu as démarré. Encore "+(Math.ceil(S.tasks.length/2)-cnt(t))+" tâche(s) pour sauver ta série.";
+if(s>=7)return"🔥 "+s+" jours de suite. Ne casse pas la chaîne, même une version minimale compte.";
+return"Bon rythme. Termine "+(S.tasks.length-cnt(t))+" tâche(s) pour une journée complète.";}
+const V={
+home(){const t=today(),n=Math.min(Math.max(dayN(t),1),TOTAL),x=XP(),l=Math.min(lvl(x),LV.length-1),nx=(lvl(x)+1)*200,pr=S.tasks.find(k=>k.p&&!isDone(t,k.id))||S.tasks.find(k=>!isDone(t,k.id));
+const w=allDays().slice(-7),q=QUOTES[(dayN(t)+60)%QUOTES.length];
+return`<div class="card"><div class="mu">Niveau ${l+1} · ${LV[l]}</div><h1>Jour ${n}/${TOTAL}</h1><div class="mu">${TOTAL-n} jours restants</div><div class="bar"><i style="width:${Math.max(n/TOTAL*100,1)}%"></i></div><div class="mu">${Math.round(n/TOTAL*100)}% du parcours · ${x} XP · prochain niveau à ${nx}</div></div>
+<div class="card tip"><h2>🧭 Coach</h2>${coach()}</div>
+<div class="card"><h2>🎯 Priorité absolue du jour</h2>${pr?`<b>${esc(pr.t)}</b><div class="row" style="margin-top:10px"><button class="btn sm" onclick="toggle('${pr.id}','${t}')">Marquer fait</button></div>`:"<b>Tout est terminé 🎉</b>"}</div>
+<div class="card"><div class="stats"><div><b>${cnt(t)}/${S.tasks.length}</b><span class="mu">tâches</span></div><div><b>${regul()}%</b><span class="mu">régularité</span></div><div><b>🔥${streak()}</b><span class="mu">jours de suite</span></div></div></div>
+<div class="card"><h2>⏱ Focus ${T.mode=="work"?"25 min":"pause"}</h2><div class="timer" id="tm">${fmt(T.left)}</div><div class="row"><button class="btn" onclick="tgl()">${T.run?"Pause":"Démarrer"}</button><button class="btn alt" onclick="rst()">Reset</button></div></div>
+<div class="card"><h2>Progrès récents (7 j)</h2><div class="bars">${w.map(d=>`<div style="height:${Math.max(pct(d)*100,3)}%"></div>`).join("")}</div><div class="lab">${w.map(d=>`<span>${parse(d).toLocaleDateString("fr",{weekday:"narrow"})}</span>`).join("")}</div></div>
+<div class="card"><h2>Pensée du jour</h2><i>« ${q} »</i></div>
+<button class="btn" onclick="go('prog')">Ouvrir mon programme</button>`},
+prog(){const d=sel,n=dayN(d);return`<div class="card"><div class="row sp"><button class="btn alt sm" onclick="mv(-1)">←</button><div style="text-align:center"><b>${d==today()?"Aujourd'hui":parse(d).toLocaleDateString("fr",{weekday:"long",day:"numeric",month:"long"})}</b><div class="mu">Jour ${n>0?n:"—"} · ${cnt(d)}/${S.tasks.length} · ${xpOf(d)} XP</div></div><button class="btn alt sm" onclick="mv(1)">→</button></div><div class="bar"><i style="width:${pct(d)*100}%"></i></div></div>
+<div class="card">${S.tasks.length?taskList(d):'<div class="mu">Aucune tâche. Ajoute-en dans Réglages.</div>'}</div>
+${d>today()?'<div class="mu" style="text-align:center">Jour à venir : verrouillé.</div>':""}`},
+cal(){const c=[];for(let i=1;i<=TOTAL;i++){const d=dateOf(i),f=d>today(),p=pct(d),bg=f?"":`background:color-mix(in srgb,var(--ok) ${Math.round(p*85)}%,var(--card))`;c.push(`<button class="d ${d==sel?"sel":""} ${d==today()?"today":""}" ${f?"disabled":""} style="${bg}" onclick="sel='${d}';go('prog')">${i}</button>`)}
+return`<div class="card"><h2>Calendrier des 90 jours</h2><div class="mu" style="margin-bottom:10px">Plus c'est vert, plus la journée est complète. Touche un jour pour le modifier.</div><div class="cal">${c.join("")}</div></div>`},
+coach(){const t=today(),ph=n=>n<=30?"Phase 1 · Fondations : installe l'habitude, vise la régularité plutôt que la perfection.":n<=60?"Phase 2 · Intensité : augmente la difficulté de tes tâches clés.":"Phase 3 · Maîtrise : consolide et prépare l'après-90 jours.";
+const bad=S.tasks.map(k=>({k,m:allDays().filter(d=>!isDone(d,k.id)).length})).sort((a,b)=>b.m-a.m)[0];
+return`<div class="card tip"><h2>Conseil du moment</h2>${coach()}</div><div class="card"><h2>Ta phase</h2>${ph(Math.max(dayN(t),1))}</div>${bad&&dayN(t)>1?`<div class="card"><h2>Point faible</h2>« ${esc(bad.k.t)} » est ta tâche la plus souvent manquée. Rends-la plus petite (5 min) ou place-la juste après le réveil.</div>`:""}<div class="card"><h2>Méthode</h2><div class="mu">1. Choisis 1 priorité ★.<br>2. Lance un focus de 25 min.<br>3. Coche dès que c'est fait.<br>4. Le soir, écris 1 ligne dans le Journal.</div></div>`},
+jour(){const d=sel,j=S.journal[d]||{};mood=mood||j.mood||null;const ent=Object.keys(S.journal).sort().reverse().slice(0,10);
+return`<div class="card"><h2>Journal du ${parse(d).toLocaleDateString("fr",{day:"numeric",month:"long"})}</h2><div class="moods">${["😞","😐","🙂","😄","🤩"].map((m,i)=>`<button class="${mood==i+1?"on":""}" onclick="mood=${i+1};render()">${m}</button>`).join("")}</div><textarea id="jt" placeholder="Qu'est-ce qui s'est bien passé ? Qu'est-ce que j'améliore demain ?">${esc(j.text||"")}</textarea><button class="btn" style="margin-top:10px" onclick="sj()">Enregistrer</button></div>${ent.length?`<div class="card"><h2>Dernières entrées</h2>${ent.map(k=>`<div class="task" onclick="sel='${k}';mood=null;render()"><div class="tt"><b>${parse(k).toLocaleDateString("fr",{day:"numeric",month:"short"})}</b> ${["","😞","😐","🙂","😄","🤩"][S.journal[k].mood||0]}<div class="mu">${esc((S.journal[k].text||"").slice(0,80))}</div></div></div>`).join("")}</div>`:""}`},
+stats(){const d=allDays(),w=d.slice(-14),tot=d.reduce((a,x)=>a+cnt(x),0),perf=d.filter(x=>pct(x)==1).length,best=Math.max(0,...d.map(xpOf)),cat=Object.keys(CATS).map(c=>{const ts=S.tasks.filter(t=>t.c==c);if(!ts.length||!d.length)return"";const p=Math.round(ts.reduce((a,t)=>a+d.filter(x=>isDone(x,t.id)).length,0)/(ts.length*d.length)*100);return`<div style="margin:10px 0"><div class="row sp"><span>${CATS[c]}</span><b>${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("");
+return`<div class="card"><div class="stats"><div><b>${XP()}</b><span class="mu">XP total</span></div><div><b>${tot}</b><span class="mu">tâches faites</span></div><div><b>${perf}</b><span class="mu">jours parfaits</span></div></div></div><div class="card"><h2>14 derniers jours</h2><div class="bars">${w.map(x=>`<div style="height:${Math.max(pct(x)*100,3)}%"></div>`).join("")}</div></div><div class="card"><h2>Par catégorie</h2>${cat||'<span class="mu">Pas encore de données.</span>'}</div><div class="card"><div class="stats"><div><b>${regul()}%</b><span class="mu">régularité</span></div><div><b>${streak()}</b><span class="mu">série</span></div><div><b>${best}</b><span class="mu">record XP/jour</span></div></div></div>`},
+set(){return`<div class="card"><h2>Mes tâches quotidiennes</h2>${S.tasks.map(t=>`<div class="task"><div class="tt">${esc(t.t)}<div class="mu">${CATS[t.c]} · ${t.xp} XP</div></div><button class="btn bad sm" onclick="del('${t.id}')">Suppr.</button></div>`).join("")}<div style="margin-top:12px"><input type="text" id="nt" placeholder="Nouvelle tâche"><div class="row" style="margin:8px 0"><select id="nc">${Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><select id="nx"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div><button class="btn" onclick="add()">Ajouter la tâche</button></div></div>
+<div class="card"><h2>Début du programme</h2><input type="date" id="sd" value="${S.start}" onchange="S.start=this.value;save();toast('Date mise à jour')"></div>
+<div class="card"><h2>Apparence</h2><select onchange="S.theme=this.value;save();th()"><option value="auto" ${S.theme=="auto"?"selected":""}>Automatique</option><option value="light" ${S.theme=="light"?"selected":""}>Clair</option><option value="dark" ${S.theme=="dark"?"selected":""}>Sombre</option></select></div>
+<div class="card"><h2>Sauvegarde</h2><div class="mu" style="margin-bottom:10px">Tes données restent sur ce téléphone. Exporte-les de temps en temps.</div><div class="row"><button class="btn alt" onclick="ex()">Exporter</button><button class="btn alt" onclick="$('#im').click()">Importer</button></div><input type="file" id="im" accept=".json" hidden onchange="imp(this)"></div>
+<div class="card"><button class="btn bad" onclick="if(confirm('Tout effacer et recommencer ?')){localStorage.removeItem('evolve');location.reload()}">Tout réinitialiser</button></div>`}};
+function add(){const v=$("#nt").value.trim();if(!v)return toast("Écris un nom de tâche");S.tasks.push({id:"t"+Date.now(),t:v,c:$("#nc").value,xp:+$("#nx").value,p:false});save();render();toast("Tâche ajoutée")}
+function del(id){if(confirm("Supprimer cette tâche ?")){S.tasks=S.tasks.filter(t=>t.id!=id);save();render()}}
+function sj(){S.journal[sel]={mood,text:$("#jt").value};save();toast("Journal enregistré");render()}
+function ex(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="evolve-sauvegarde-"+today()+".json";a.click()}
+function imp(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.tasks||!o.start)throw 0;S=o;save();render();toast("Import réussi")}catch(e){toast("Fichier invalide")}};r.readAsText(f)}
+function mv(k){const n=dayN(sel)+k;if(n<1||n>TOTAL||dateOf(n)>today())return;sel=dateOf(n);render()}
+function go(t){tab=t;mood=null;render();scrollTo(0,0)}
+function th(){const r=document.documentElement;S.theme=="auto"?r.removeAttribute("data-t"):r.dataset.t=S.theme}
+const TABS=[["home","🏠","Accueil"],["prog","✅","Programme"],["cal","📅","Calendrier"],["coach","🧭","Coach"],["jour","📓","Journal"],["stats","📊","Stats"],["set","⚙️","Réglages"]];
+function render(){$("#app").innerHTML=V[{home:"home",prog:"prog",cal:"cal",coach:"coach",jour:"jour",stats:"stats",set:"set"}[tab]]();$("#nav").innerHTML=TABS.map(t=>`<button class="${tab==t[0]?"on":""}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join("")}
+th();render();
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script></body></html>
